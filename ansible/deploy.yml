@@ -12,7 +12,7 @@
 
     # 1️⃣ Install Node.js and npm
     - name: Ensure Node.js and npm are installed
-      Yum:
+      yum:
         name: nodejs
         state: present
 
@@ -55,7 +55,7 @@
 
     # 7️⃣ Install Nginx
     - name: Install Nginx
-      Yum:
+      yum:
         name: nginx
         state: present
 
