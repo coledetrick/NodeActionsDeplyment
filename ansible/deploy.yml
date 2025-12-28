@@ -48,10 +48,12 @@
 
     # 6️⃣ Start/restart Node.js app with pm2
     - name: Start or restart Node.js app
-      community.general.pm2:
-        name: node_app
-        script: "{{ app_dir }}/{{ node_app_entry }}"
-        state: restarted
+    - name: Start/restart Node.js app with PM2
+      shell: |
+    pm2 start {{ app_dir }}/{{ node_app_entry }} --name node_app || pm2 restart node_app
+      args:
+      chdir: "{{ app_dir }}"
+
 
     # 7️⃣ Install Nginx
     - name: Install Nginx
