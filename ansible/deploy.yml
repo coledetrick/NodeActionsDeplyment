@@ -51,7 +51,7 @@
       shell: |
     pm2 start {{ app_dir }}/{{ node_app_entry }} --name node_app || pm2 restart node_app
       args:
-      chdir: "{{ app_dir }}"
+        chdir: "{{ app_dir }}"
 
 
     # 7️⃣ Install Nginx
