@@ -18,14 +18,12 @@ jobs:
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.ANSIBLE_KEY }}
-
-      # 3️⃣ Deploy to EC2
+          
       - name: Copy app to server
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@<EC2_PUBLIC_IP> "mkdir -p ~/app"
           rsync -avz -e "ssh -o StrictHostKeyChecking=no" ./ ec2-user@<EC2_PUBLIC_IP>:~/app
 
-      # 4️⃣ Install dependencies & start app
       - name: Install and start app
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@<EC2_PUBLIC_IP> "
