@@ -21,15 +21,14 @@ jobs:
           sudo apt install -y ansible python3-pip
           pip3 install --user boto3 botocore
 
-      # 3️⃣ Copy SSH key
+      # 3️⃣ Setup SSH key
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.ANSIBLE_KEY }}" > ~/.ssh/id_rsa
           chmod 400 ~/.ssh/id_rsa
 
-      # 4️⃣ Run Ansible playbook with secrets/vars
+      # 4️⃣ Run Ansible playbook
       - name: Run Ansible Playbook
         run: |
-          ansible-playbook -i ansible/hosts.ini ansible/deploy.yml \
-            --extra-vars "db_password=${{ secrets.DB_PASSWORD }} api_key=${{ secrets.API_KEY }}"
+          ansible-playbook -i ansible/hosts.ini ansible/deploy.yml
