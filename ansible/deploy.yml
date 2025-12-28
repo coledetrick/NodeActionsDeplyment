@@ -1,0 +1,53 @@
+---
+- name: Deploy Node.js App
+  hosts: nodejs
+  become: true
+  vars:
+    app_dir: /home/ec2-user/app
+    node_app_entry: app.js
+  tasks:
+
+    - name: Ensure Node.js and npm are installed
+      amazon.aws.aws_pkg_mgr:
+        name: nodejs
+        state: present
+
+    - name: Ensure pm2 is installed globally
+      npm:
+        name: pm2
+        global: yes
+        state: present
+
+    - name: Ensure app directory exists
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ec2-user
+        group: ec2-user
+
+    - name: Copy app code
+      copy:
+        src: ../               # Copy all repo files
+        dest: "{{ app_dir }}"
+        owner: ec2-user
+        group: ec2-user
+        mode: '0755'
+
+    - name: Render config file with secrets
+      template:
+        src: templates/app.config.j2
+        dest: "{{ app_dir }}/config.json"
+        owner: ec2-user
+        group: ec2-user
+        mode: '0600'
+
+    - name: Install npm dependencies
+      npm:
+        path: "{{ app_dir }}"
+        production: yes
+
+    - name: Start or restart Node.js app with PM2
+      community.general.pm2:
+        name: node_app
+        script: "{{ app_dir }}/{{ node_app_entry }}"
+        state: restarted
