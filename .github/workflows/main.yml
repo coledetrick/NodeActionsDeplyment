@@ -10,18 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repo
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2️⃣ Install Ansible and dependencies
       - name: Install Ansible
         run: |
           sudo apt update
           sudo apt install -y ansible python3-pip
           pip3 install --user boto3 botocore
 
-      # 3️⃣ Setup SSH key
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
