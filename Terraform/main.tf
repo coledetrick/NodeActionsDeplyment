@@ -1,6 +1,6 @@
   provider "aws" {
     region = var.region
-    profile = ${{ vars.AWS_PROFILE }}
+    profile = "${{ vars.AWS_PROFILE }}"
   }
 
   resource "aws_instance" "automated_server" {
