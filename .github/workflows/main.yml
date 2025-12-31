@@ -27,12 +27,17 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.ANSIBLE_KEY }}" > ~/.ssh/id_rsa
           chmod 400 ~/.ssh/id_rsa
-
-      # 4️⃣ Run Ansible playbook with EC2 IP from secret
-      - name: Run Ansible Playbook
+      - name: Create inventory from secret IP
         run: |
-          ansible-playbook \
-            -i "${{ secrets.EC2_PUBLIC_IP }}," \
-            -u ec2-user \
-            --private-key ~/.ssh/id_rsa \
-            Ansible/deploy.yml
+          cat > inventory.ini <<EOF
+          [nodejs]
+          ec2 ansible_host=${{ secrets.EC2_PUBLIC_IP }} ansible_user=ec2-user ansible_ssh_private_key_file=/home/runner/.ssh/id_rsa
+          EOF
+      
+      - name: Run Ansible Playbook
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+        run: |
+          ansible-playbook -i inventory.ini Ansible/deploy.yml
+
+
