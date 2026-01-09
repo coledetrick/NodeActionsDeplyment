@@ -4,7 +4,5 @@ I learn quite a bit about Iac concepts, CICD, and most of all Linux permissions.
 
 TODO
 - Add ec2 and run it.
-- blog post running it
-- architectural diagram
-- lessons learned, choices made
-- clean up repo.
+- blog post 
+
