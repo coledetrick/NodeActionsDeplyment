@@ -2,6 +2,7 @@
 - name: Deploy Node.js App with Nginx
   hosts: nodejs
   become: true
+
   vars:
     app_dir: /home/ec2-user/app
     node_app_entry: app.js
@@ -9,10 +10,12 @@
     nginx_config_path: /etc/nginx/conf.d/nodeapp.conf
 
   tasks:
-
-    - name: Ensure Node.js and npm are installed
+    - name: Install required packages
       yum:
-        name: nodejs
+        name:
+          - nodejs
+          - nginx
+          - rsync
         state: present
 
     - name: Ensure pm2 is installed globally
@@ -27,31 +30,53 @@
         state: directory
         owner: ec2-user
         group: ec2-user
+        mode: "0755"
 
-    - name: Copy app code
-      copy:
-        src: ../               
-        dest: "{{ app_dir }}"
+    # Copy repo contents from GitHub runner -> EC2
+    - name: Sync app code to EC2
+      synchronize:
+        src: "{{ playbook_dir }}/../"   # repo root (playbook is in Ansible/)
+        dest: "{{ app_dir }}/"
+        recursive: true
+        delete: true
+
+    - name: Ensure app files owned by ec2-user
+      file:
+        path: "{{ app_dir }}"
+        state: directory
         owner: ec2-user
         group: ec2-user
-        mode: '0755'
+        recurse: true
 
-    - name: Install npm dependencies
-      npm:
-        path: "{{ app_dir }}"
-        production: yes
+    - name: Verify package.json exists
+      stat:
+        path: "{{ app_dir }}/package.json"
+      register: pkg
 
-    - name: Start/restart Node.js app with PM2
-      shell: |
-        pm2 start {{ app_dir }}/{{ node_app_entry }} --name node_app || pm2 restart node_app
+    - name: Fail if package.json is missing
+      fail:
+        msg: "package.json not found at {{ app_dir }}/package.json. Check repo layout or sync src path."
+      when: not pkg.stat.exists
+
+    - name: Install npm dependencies (production)
+      become_user: ec2-user
+      command: npm install --omit=dev
       args:
         chdir: "{{ app_dir }}"
 
+    - name: Start or restart app with PM2
+      become_user: ec2-user
+      shell: |
+        pm2 start {{ app_dir }}/{{ node_app_entry }} --name node_app || pm2 restart node_app
+        pm2 save
+      args:
+        chdir: "{{ app_dir }}"
 
-    - name: Install Nginx
-      yum:
-        name: nginx
-        state: present
+    - name: Enable PM2 startup on boot
+      shell: |
+        pm2 startup systemd -u ec2-user --hp /home/ec2-user
+      args:
+        creates: /etc/systemd/system/pm2-ec2-user.service
 
     - name: Ensure Nginx is enabled and started
       systemd:
@@ -68,17 +93,17 @@
               server_name _;
 
               location / {
-                  proxy_pass http://localhost:{{ node_app_port }};
+                  proxy_pass http://127.0.0.1:{{ node_app_port }};
                   proxy_http_version 1.1;
                   proxy_set_header Upgrade $http_upgrade;
-                  proxy_set_header Connection 'upgrade';
+                  proxy_set_header Connection "upgrade";
                   proxy_set_header Host $host;
                   proxy_cache_bypass $http_upgrade;
               }
           }
         owner: root
         group: root
-        mode: '0644'
+        mode: "0644"
 
     - name: Reload Nginx to apply config
       systemd:
